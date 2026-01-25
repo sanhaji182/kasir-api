@@ -15,10 +15,120 @@ type product struct {
 	Stok  int    `json:"stock"`
 }
 
+type category struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 var products = []product{
 	{ID: 1, Name: "Laptop", Harga: 1500, Stok: 10},
 	{ID: 2, Name: "Smartphone", Harga: 800, Stok: 25},
 	{ID: 3, Name: "Tablet", Harga: 400, Stok: 15},
+}
+
+var categories = []category{
+	{ID: 1, Name: "Electronics", Description: "Gadgets and devices"},
+	{ID: 2, Name: "Books", Description: "Printed and digital books"},
+	{ID: 3, Name: "Clothing", Description: "Apparel and accessories"},
+	{ID: 4, Name: "Home & Kitchen", Description: "Household items and kitchenware"},
+}
+
+func getcategories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(categories)
+	// return
+}
+
+func postcategory(w http.ResponseWriter, r *http.Request) {
+	var newCategory category
+	err := json.NewDecoder(r.Body).Decode(&newCategory)
+	if err != nil {
+		http.Error(w, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+
+	newCategory.ID = len(categories) + 1
+	categories = append(categories, newCategory)
+
+	w.WriteHeader(http.StatusCreated) //201
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newCategory)
+}
+
+func updatecategoryByID(w http.ResponseWriter, r *http.Request) {
+	//get id dari request
+	idStr := strings.TrimPrefix(r.URL.Path, "/categories/")
+	//ganti int
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid Category ID", http.StatusBadRequest)
+		return
+	}
+	//get dat dari request
+	var updatedCategory category
+	err = json.NewDecoder(r.Body).Decode(&updatedCategory)
+	if err != nil {
+		http.Error(w, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+	// loop produk, cari id, ganti sesuai data dari request
+	for i, c := range categories {
+		if c.ID == id {
+			categories[i] = updatedCategory
+			categories[i].ID = id // Ensure ID remains unchanged
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(categories[i])
+			return
+		}
+	}
+	http.Error(w, "Category Not Found", http.StatusNotFound)
+	return
+}
+
+func getcategoriesByID(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/categories/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid Category ID", http.StatusBadRequest)
+		return
+	}
+
+	for _, c := range categories {
+		if c.ID == id {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(c)
+			return
+		}
+	}
+
+	http.Error(w, "Category Not Found", http.StatusNotFound)
+	return
+}
+
+func deletecategoryByID(w http.ResponseWriter, r *http.Request) {
+	//get id dari request
+	idStr := strings.TrimPrefix(r.URL.Path, "/categories/")
+	//ganti id ke int
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid Category ID", http.StatusBadRequest)
+		return
+	}
+	//loop produk, cari id, hapus data
+	for i, c := range categories {
+		if c.ID == id {
+			categories = append(categories[:i], categories[i+1:]...)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{
+				"message": "Category Deleted",
+			})
+			return
+		}
+	}
+
+	http.Error(w, "Category Not Found", http.StatusNotFound)
+	return
 }
 
 func getproductByID(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +210,33 @@ func deleteProductByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	http.HandleFunc("/categories/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			if r.URL.Path == "/categories/" {
+				getcategories(w, r)
+				return
+			} else {
+				getcategoriesByID(w, r)
+				return
+			}
+			// getcategories(w, r)
+			// return
+		} else if r.Method == "POST" {
+			postcategory(w, r)
+			return
+		} else if r.Method == "PUT" {
+			updatecategoryByID(w, r)
+			return
+		} else if r.Method == "DELETE" {
+			deletecategoryByID(w, r)
+			return
+		}
+		//  else if r.Method == "GET" {
+		// 	getcategoriesByID(w, r)
+		// 	return
+		// }
+	})
 
 	// GET api/products/{id}
 	// PUT api/products/{id}
