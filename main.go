@@ -235,8 +235,8 @@ func main() {
 	}
 
 	config := Config{
-		Port:    viper.GetString("port"),
-		DB_CONN: viper.GetString("db_conn"),
+		Port:    viper.GetString("PORT"),
+		DB_CONN: viper.GetString("DB_CONN"),
 	}
 
 	db, err := database.InitDB(config.DB_CONN)
