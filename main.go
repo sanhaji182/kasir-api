@@ -259,12 +259,18 @@ func main() {
 	transactionService := services.NewTransactionService(transactionRepo)
 	transactionHandler := handlers.NewTransactionHandler(transactionService)
 
+	// Report
+	reportRepo := repositories.NewReportRepository(db)
+	reportService := services.NewReportService(reportRepo)
+	reportHandler := handlers.NewReportHandler(reportService)
+
 	// Setup routes
 	http.HandleFunc("/api/produk", productHandler.HandleProducts)
 	http.HandleFunc("/api/produk/", productHandler.HandleProductByID)
 	http.HandleFunc("/api/categories", categoryHandler.HandleCategories)
 	http.HandleFunc("/api/categories/", categoryHandler.HandleCategoryByID)
-	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout) // POST
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)           // POST
+	http.HandleFunc("/api/report/hari-ini", reportHandler.HandleDailySalesReport) // GET
 
 	// http.HandleFunc("/categories/", func(w http.ResponseWriter, r *http.Request) {
 	// 	if r.Method == "GET" {
